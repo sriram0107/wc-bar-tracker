@@ -1,6 +1,6 @@
 # World Cup Bar Tracker — Toronto MVP
 
-A curated directory of Toronto bars showing the FIFA World Cup. Browse a Mapbox map, search within an adjustable radius around your location, filter by walk-in / cover / audio, and read hand-curated vibe notes. The frontend fetches the bar catalog **once per session** and filters client-side to minimize Firestore reads.
+A curated directory of Toronto bars showing the World Cup. Browse a Mapbox map, search within an adjustable radius around your location, filter by walk-in / cover / audio, and read hand-curated vibe notes. The frontend fetches the bar catalog **once per session** and filters client-side to minimize Firestore reads.
 
 ## Tech stack
 
@@ -75,7 +75,31 @@ Open [http://localhost:3000](http://localhost:3000). Allow location when prompte
 
 ## Analytics and waitlist
 
-### Plausible setup
+### Unique visitors (Firebase or Vercel — pick one)
+
+Set `NEXT_PUBLIC_VISITOR_TRACKING` in `.env.local`:
+
+| Value | How it works | Where to see the count |
+|-------|----------------|------------------------|
+| `firebase` (default) | Anonymous `wc_vid` cookie + `POST /api/visit` writes to Firestore | `GET /api/stats/visitors` or Firebase Console → `meta/site_stats` |
+| `vercel` | [@vercel/analytics](https://vercel.com/docs/analytics) in the layout | Vercel project → **Analytics** (enable Web Analytics in project settings) |
+| `both` | Firestore beacon + Vercel Analytics | Both places above |
+
+**Firebase schema (no client Firebase SDK):**
+
+- `meta/site_stats` — `unique_visitors`, `total_visits`, `updated_at`
+- `visitors/{anonymousId}` — `first_seen`, `last_seen`, `visit_count`
+
+**Read count programmatically:**
+
+```bash
+curl http://localhost:3000/api/stats/visitors
+# Optional: curl -H "x-stats-secret: YOUR_SECRET" ...
+```
+
+Plausible (below) is still used for **engagement events** (waitlist clicks, filters, etc.), not for unique visitor totals.
+
+### Plausible setup (engagement events)
 
 1. Create a site at [plausible.io](https://plausible.io) matching your deployed hostname.
 2. Set `NEXT_PUBLIC_PLAUSIBLE_DOMAIN` in `.env.local`.
@@ -146,6 +170,13 @@ lib/
   geospatial.ts        # geohash encode + Firestore geo query
   geojsonCircle.ts     # Map radius polygon
   waitlist.ts          # Form URL + UTM params
+  visitorStats.ts      # Firestore unique visitor aggregates
+app/api/
+  visit/route.ts       # POST — record anonymous visit
+  stats/visitors/route.ts
+components/
+  VisitorBeacon.tsx
+  VercelAnalytics.tsx
 scripts/
   seed-bars.ts
   backfill-geohash.ts
@@ -200,6 +231,23 @@ npm start
 ```
 
 Set the same environment variables on your host (Vercel, etc.).
+
+### Firestore security rules
+
+Client SDK access to `bars` is denied in [`firestore.rules`](firestore.rules). The Next.js API uses Firebase Admin (bypasses rules). Deploy rules to your project:
+
+```bash
+firebase deploy --only firestore:rules
+```
+
+### Health check
+
+- `GET /api/health` — liveness
+- `GET /api/health?db=1` — readiness (Firestore ping)
+
+### CI
+
+GitHub Actions runs `lint`, `test`, and `build` on push/PR (see [`.github/workflows/ci.yml`](.github/workflows/ci.yml)).
 
 ## Editing data
 

@@ -1,4 +1,6 @@
 import { NextResponse } from "next/server";
+import { getClientErrorMessage, logApiError } from "@/lib/apiError";
+import { captureException } from "@/lib/monitoring";
 import { getAdminFirestore } from "@/lib/firebaseAdmin";
 import { fetchAllStreamingBars } from "@/lib/geospatial";
 
@@ -27,9 +29,11 @@ export async function GET() {
       }
     );
   } catch (error) {
-    console.error("[GET /api/bars]", error);
-    const message =
-      error instanceof Error ? error.message : "Failed to fetch bars";
-    return NextResponse.json({ error: message }, { status: 500 });
+    logApiError("GET /api/bars", error);
+    captureException(error, { route: "GET /api/bars" });
+    return NextResponse.json(
+      { error: getClientErrorMessage(error) },
+      { status: 500 }
+    );
   }
 }

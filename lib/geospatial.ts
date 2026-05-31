@@ -1,30 +1,10 @@
 import { geohashQueryBounds, type Geopoint } from "geofire-common";
 import type { Firestore } from "firebase-admin/firestore";
+import { docToBar } from "@/lib/barSchema";
 import { distanceKm } from "@/lib/geo";
 import type { Bar } from "@/types/bar";
 
 export { encodeGeohash, distanceKm } from "@/lib/geo";
-
-function docToBar(
-  id: string,
-  data: Record<string, unknown>,
-  distance_km?: number
-): Bar {
-  return {
-    id,
-    name: data.name as string,
-    lat: data.lat as number,
-    lng: data.lng as number,
-    geohash: data.geohash as string,
-    is_streaming_wc: data.is_streaming_wc as boolean,
-    entry_type: data.entry_type as Bar["entry_type"],
-    cover_charge: data.cover_charge as string,
-    fan_hub: data.fan_hub as string,
-    vibe_notes: data.vibe_notes as string,
-    audio_status: data.audio_status as Bar["audio_status"],
-    ...(distance_km !== undefined && { distance_km }),
-  };
-}
 
 /**
  * Single Firestore read — all World Cup streaming bars (~50 docs).
@@ -36,7 +16,9 @@ export async function fetchAllStreamingBars(db: Firestore): Promise<Bar[]> {
     .where("is_streaming_wc", "==", true)
     .get();
 
-  return snapshot.docs.map((doc) => docToBar(doc.id, doc.data()));
+  return snapshot.docs
+    .map((doc) => docToBar(doc.id, doc.data()))
+    .filter((bar): bar is Bar => bar !== null);
 }
 
 /**
@@ -80,7 +62,8 @@ export async function queryBarsInRadius(
       const dist = distanceKm(center, barPoint);
       if (dist > radiusKm) continue;
 
-      bars.push(docToBar(doc.id, data, Math.round(dist * 10) / 10));
+      const bar = docToBar(doc.id, data, Math.round(dist * 10) / 10);
+      if (bar) bars.push(bar);
     }
   }
 

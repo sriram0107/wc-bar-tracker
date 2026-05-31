@@ -2,9 +2,17 @@
  * Shape of a bar document stored in Firestore and returned by our API.
  * Field names match the Firestore schema exactly.
  */
-export type EntryType = "Walk-in" | "Reservation" | "Ticketed";
+export type EntryType =
+  | "Walk-in"
+  | "Walk-in friendly"
+  | "Reservation"
+  | "Recommended reservation"
+  | "Reservation required"
+  | "Reservations for groups"
+  | "Bookable"
+  | "Ticketed";
 
-export type AudioStatus = "Full Audio" | "Visual Only";
+export type AudioStatus = "Full Audio" | "Muted / Subtitles" | "Visual Only";
 
 export interface Bar {
   id: string;
@@ -19,6 +27,8 @@ export interface Bar {
   fan_hub: string;
   vibe_notes: string;
   audio_status: AudioStatus;
+  /** Optional hero/thumbnail URL (e.g. from Firestore or Unsplash) */
+  image_url?: string;
   /** Present when fetched via radius query — distance from search center in km */
   distance_km?: number;
 }

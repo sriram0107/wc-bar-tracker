@@ -20,10 +20,10 @@ export function LocationBanner({
 
   return (
     <div
-      className={`shrink-0 px-4 py-2 text-sm ${
+      className={`shrink-0 border-b px-4 py-2.5 text-sm ${
         status === "denied" || status === "unavailable"
-          ? "bg-amber-50 text-amber-900"
-          : "bg-pitch-100 text-pitch-900"
+          ? "border-amber-500/30 bg-amber-500/10 text-amber-200"
+          : "border-wc-neon/20 bg-wc-neon/5 text-wc-neon"
       }`}
       role="status"
     >
@@ -35,7 +35,7 @@ export function LocationBanner({
           <button
             type="button"
             onClick={onRetry}
-            className="shrink-0 rounded-full bg-pitch-600 px-3 py-1 text-xs font-medium text-white hover:bg-pitch-700"
+            className="shrink-0 rounded-xl bg-wc-neon px-3 py-1.5 text-xs font-bold uppercase tracking-wide text-wc-navy transition hover:brightness-110"
           >
             Use my location
           </button>

@@ -1,22 +1,114 @@
 /**
- * Seeds ~50 mock Toronto bars into Firestore for local UI testing.
+ * Seeds bars from the CSV file into Firestore using the csv_to_bars parser.
  * Each document includes a `geohash` field for geospatial queries.
  *
  * Usage:
  *   cp .env.local.example .env.local
- *   npm run seed              # add bars (skips if collection already has docs)
- *   npm run seed -- --clear   # delete all bars first, then seed fresh
+ *   npm run seed                          # add bars (skips if collection already has docs)
+ *   npm run seed -- --clear               # delete all bars first, then seed fresh
+ *   npm run seed -- --csv path/to/file.csv  # use a custom CSV file
  */
 import { config } from "dotenv";
 import { resolve } from "path";
+import * as fs from "fs";
 import { cert, getApps, initializeApp } from "firebase-admin/app";
 import { getFirestore } from "firebase-admin/firestore";
 import { encodeGeohash } from "../lib/geospatial";
-import { SEED_BARS } from "./seed-bars-data";
+
+// ── Re-use the CSV parsing logic from csv_to_bars ────────────────────────────
+
+interface BarEntry {
+  name: string;
+  lat: number;
+  lng: number;
+  is_streaming_wc: boolean;
+  entry_type: string;
+  cover_charge: string;
+  fan_hub: string;
+  vibe_notes: string;
+  audio_status: string;
+}
+
+function splitCSVLine(line: string): string[] {
+  const result: string[] = [];
+  let current = "";
+  let inQuotes = false;
+  for (let i = 0; i < line.length; i++) {
+    const ch = line[i];
+    if (ch === '"') {
+      if (inQuotes && line[i + 1] === '"') { current += '"'; i++; }
+      else { inQuotes = !inQuotes; }
+    } else if (ch === "," && !inQuotes) {
+      result.push(current);
+      current = "";
+    } else {
+      current += ch;
+    }
+  }
+  result.push(current);
+  return result;
+}
+
+function parseCSV(raw: string): Record<string, string>[] {
+  const lines = raw.trim().split(/\r?\n/);
+  const headers = splitCSVLine(lines[0]);
+  return lines.slice(1).map((line) => {
+    const values = splitCSVLine(line);
+    return Object.fromEntries(headers.map((h, i) => [h.trim(), (values[i] ?? "").trim()]));
+  });
+}
+
+function mapEntryType(reservations: string): string {
+  const val = reservations.toLowerCase();
+  if (val === "no" || val === "no – first come, first served" || val === "no reservations for games") return "Walk-in";
+  if (val.includes("walk-in friendly")) return "Walk-in friendly";
+  if (val.includes("recommended")) return "Recommended reservation";
+  if (val.includes("advance") || val === "yes (private events)") return "Reservation required";
+  if (val.includes("group")) return "Reservations for groups";
+  if (val.includes("bookable") || val === "yes for big matches") return "Bookable";
+  return reservations;
+}
+
+function mapCoverCharge(cover: string): string {
+  const val = cover.trim().toLowerCase();
+  if (val === "no" || val === "no cover") return "No Cover";
+  return cover.trim();
+}
+
+function mapFanHub(idealFans: string): string {
+  return idealFans.trim() || "All fans";
+}
+
+function mapAudioStatus(screens: string): string {
+  const val = screens.toLowerCase();
+  if (val.includes("sound") || val.includes("audio") || val.includes("full")) return "Full Audio";
+  if (val.includes("silent") || val.includes("muted")) return "Muted / Subtitles";
+  return "Full Audio";
+}
+
+function loadBarsFromCSV(csvPath: string): BarEntry[] {
+  const raw = fs.readFileSync(csvPath, "utf-8");
+  const rows = parseCSV(raw);
+  return rows
+    .filter((row) => row["Bar Name"] && row["Latitude"] && row["Longitude"])
+    .map((row) => ({
+      name: row["Bar Name"],
+      lat: parseFloat(row["Latitude"]),
+      lng: parseFloat(row["Longitude"]),
+      is_streaming_wc: true,
+      entry_type: mapEntryType(row["Reservations?"] ?? ""),
+      cover_charge: mapCoverCharge(row["Cover?"] ?? ""),
+      fan_hub: mapFanHub(row["Ideal Fans"] ?? ""),
+      vibe_notes: row["Vibe"] || "",
+      audio_status: mapAudioStatus(row["Screens"] ?? ""),
+    }));
+}
+
+// ── Firebase helpers ─────────────────────────────────────────────────────────
 
 config({ path: resolve(process.cwd(), ".env.local") });
 
-const BATCH_SIZE = 500; // Firestore batch limit
+const BATCH_SIZE = 500;
 
 function initAdmin() {
   if (getApps().length > 0) return getApps()[0];
@@ -32,9 +124,7 @@ function initAdmin() {
     process.exit(1);
   }
 
-  return initializeApp({
-    credential: cert({ projectId, clientEmail, privateKey }),
-  });
+  return initializeApp({ credential: cert({ projectId, clientEmail, privateKey }) });
 }
 
 async function clearBars(db: FirebaseFirestore.Firestore) {
@@ -59,8 +149,22 @@ async function clearBars(db: FirebaseFirestore.Firestore) {
   return deleted;
 }
 
+// ── Entry point ───────────────────────────────────────────────────────────────
+
 async function seed() {
   const shouldClear = process.argv.includes("--clear");
+
+  // Allow overriding the CSV path via --csv <path>
+  const csvFlagIdx = process.argv.indexOf("--csv");
+  const csvPath = csvFlagIdx !== -1
+    ? resolve(process.argv[csvFlagIdx + 1])
+    : resolve(__dirname, "Bars_showing_Fifa_World_Cup_with_coords.csv");
+
+  if (!fs.existsSync(csvPath)) {
+    console.error(`CSV file not found: ${csvPath}`);
+    process.exit(1);
+  }
+
   initAdmin();
   const db = getFirestore();
 
@@ -77,13 +181,14 @@ async function seed() {
     }
   }
 
-  console.log(`Seeding ${SEED_BARS.length} Toronto bars (with geohash)…\n`);
+  const bars = loadBarsFromCSV(csvPath);
+  console.log(`Seeding ${bars.length} bars from CSV (with geohash)…\n`);
 
   let batch = db.batch();
   let ops = 0;
   let written = 0;
 
-  for (const bar of SEED_BARS) {
+  for (const bar of bars) {
     const geohash = encodeGeohash(bar.lat, bar.lng);
     const ref = db.collection("bars").doc();
     batch.set(ref, { ...bar, geohash });

@@ -1,6 +1,8 @@
 import type { Metadata } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
+import { Bebas_Neue, Geist, Geist_Mono } from "next/font/google";
 import { PlausibleAnalytics } from "@/components/PlausibleAnalytics";
+import { VercelAnalytics } from "@/components/VercelAnalytics";
+import { VisitorBeacon } from "@/components/VisitorBeacon";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -13,10 +15,16 @@ const geistMono = Geist_Mono({
   subsets: ["latin"],
 });
 
+const bebasNeue = Bebas_Neue({
+  variable: "--font-bebas",
+  weight: "400",
+  subsets: ["latin"],
+});
+
 export const metadata: Metadata = {
-  title: "World Cup Bar Tracker | Toronto",
+  title: "Toronto World Cup Bars 2026",
   description:
-    "Curated map of Toronto bars showing the FIFA World Cup — filter by walk-in, cover, and audio.",
+    "Find the best Toronto bars to watch World Cup 2026 — filter by cover, audio, and walk-in access on an interactive map.",
 };
 
 export default function RootLayout({
@@ -27,9 +35,11 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased`}
+        className={`${geistSans.variable} ${geistMono.variable} ${bebasNeue.variable} font-sans antialiased`}
       >
         <PlausibleAnalytics />
+        <VercelAnalytics />
+        <VisitorBeacon />
         {children}
       </body>
     </html>

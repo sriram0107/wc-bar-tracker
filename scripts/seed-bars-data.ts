@@ -1,7 +1,7 @@
 /**
  * 50 mock Toronto bars for local / demo seeding (exactly 50 entries).
  * Coordinates are approximate real neighbourhood anchors.
- */
+*/
 
 export type SeedBar = {
   name: string;
