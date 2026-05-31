@@ -57,10 +57,12 @@ function Colon() {
 
 /** Loud, bold countdown to World Cup kickoff — top-right of the header */
 export function Countdown() {
-    const [timeLeft, setTimeLeft] = useState<TimeLeft | null>(getTimeLeft);
+    const [timeLeft, setTimeLeft] = useState<TimeLeft | null>(null);
 
     useEffect(() => {
-        const id = setInterval(() => setTimeLeft(getTimeLeft()), 1_000);
+        // Set initial time on client side only
+        setTimeLeft(getTimeLeft());
+        const id = setInterval(() => setTimeLeft(getTimeLeft()), 1000);
         return () => clearInterval(id);
     }, []);
 
