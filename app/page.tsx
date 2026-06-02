@@ -4,7 +4,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { AppHeader } from "@/components/AppHeader";
 import { BarCard } from "@/components/BarCard";
 import { BarMap } from "@/components/BarMap";
-import { BarOwnerCTA } from "@/components/BarOwnerCTA";
+import { Countdown } from "@/components/Countdown";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { FilterPills, type BarFilters } from "@/components/FilterPills";
 import { LocationBanner } from "@/components/LocationBanner";
@@ -232,9 +232,6 @@ export default function HomePage() {
               </ul>
             </div>
 
-            <div className="hidden shrink-0 p-4 md:block">
-              <BarOwnerCTA />
-            </div>
           </div>
         </aside>
 
@@ -262,6 +259,10 @@ export default function HomePage() {
       </div>
 
       <div id="about" className="hidden" aria-hidden />
+
+      <div className="fixed bottom-20 left-4 z-[40] md:bottom-6">
+        <Countdown />
+      </div>
 
       <MobileBottomNav activeView={mobileView} onViewChange={setMobileView} />
     </div>

@@ -7,30 +7,35 @@ import { Countdown } from "@/components/Countdown";
 
 
 function AddBarButton({ className = "" }: { className?: string }) {
-  return (<></>);
-  // const formUrl = getWaitlistFormUrl();
+  const formUrl = getWaitlistFormUrl();
 
-  // if (!formUrl) {
-  //   return (
-  //     <span
-  //       className={`cursor-not-allowed rounded-xl bg-wc-border px-4 py-2 text-sm font-bold uppercase tracking-wide text-wc-muted ${className}`}
-  //     >
-  //       Add Your Bar
-  //     </span>
-  //   );
-  // }
+  if (!formUrl) {
+    return (
+      <span
+        className={`cursor-not-allowed rounded-xl bg-wc-border px-4 py-2 text-[10px] font-bold uppercase tracking-wider text-wc-muted sm:text-xs ${className}`}
+      >
+        Add Bar
+      </span>
+    );
+  }
 
-  // return (
-  //   <a
-  //     href={formUrl}
-  //     target="_blank"
-  //     rel="noopener noreferrer"
-  //     onClick={() => track("waitlist_click", { source: "header_add_bar" })}
-  //     className={`rounded-xl bg-wc-neon px-4 py-2 text-sm font-bold uppercase tracking-wide text-wc-navy shadow-neon-sm transition hover:brightness-110 ${className}`}
-  //   >
-  //     Add Your Bar
-  //   </a>
-  // );
+  return (
+    <div className={`flex items-center gap-3 ${className}`}>
+      <span className="hidden font-display text-xs tracking-widest text-wc-muted md:inline">
+        OWN A BAR?
+      </span>
+      <a
+        href={formUrl}
+        target="_blank"
+        rel="noopener noreferrer"
+        onClick={() => track("waitlist_click", { source: "header_add_bar" })}
+        className="group relative overflow-hidden rounded-xl bg-wc-neon px-4 py-2 text-[10px] font-bold uppercase tracking-wider text-wc-navy shadow-neon-sm transition-all hover:scale-105 hover:brightness-110 active:scale-95 sm:px-5 sm:text-xs"
+      >
+        <span className="relative z-10">Add Your Bar</span>
+        <div className="absolute inset-0 z-0 bg-gradient-to-r from-white/0 via-white/20 to-white/0 translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-500" />
+      </a>
+    </div>
+  );
 }
 
 /** App header with logo, nav, and primary CTA */
@@ -60,9 +65,8 @@ export function AppHeader() {
         >
         </nav>
 
-        <div className="flex items-center gap-2">
-          <Countdown />
-          <AddBarButton className="hidden sm:inline-flex" />
+        <div className="flex items-center gap-3">
+          <AddBarButton />
 
           <button
             type="button"

@@ -79,11 +79,11 @@ export function Countdown() {
 
     return (
         <div
-            className="flex items-center gap-1 rounded-xl px-3 py-1.5"
+            className="flex items-center gap-1.5 rounded-2xl px-3.5 py-2 backdrop-blur-md transition-all hover:scale-105"
             style={{
-                background: "linear-gradient(135deg, rgba(124,58,237,0.15) 0%, rgba(0,255,163,0.08) 100%)",
-                border: "1px solid rgba(0,255,163,0.25)",
-                boxShadow: "0 0 20px rgba(0,255,163,0.08), inset 0 1px 0 rgba(255,255,255,0.04)",
+                background: "linear-gradient(135deg, rgba(12,18,34,0.9) 0%, rgba(124,58,237,0.1) 100%)",
+                border: "1px solid rgba(0,255,163,0.3)",
+                boxShadow: "0 0 30px rgba(0,255,163,0.15), inset 0 1px 0 rgba(255,255,255,0.05)",
             }}
         >
             <span
